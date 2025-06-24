@@ -15,7 +15,16 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000", // local dev
+  "https://your-frontend-domain.com", // <-- replace with your deployed frontend URL
+];
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // API routes

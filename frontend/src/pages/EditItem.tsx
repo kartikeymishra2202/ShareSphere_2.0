@@ -4,10 +4,21 @@ import { getItemById, apiFetch } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+interface EditItemItem {
+  _id: string;
+  title: string;
+  category: { _id: string; label: string };
+}
+
+interface EditItemCategory {
+  _id: string;
+  label: string;
+}
+
 const EditItem = () => {
   const { id } = useParams<{ id: string }>();
-  const [item, setItem] = useState<any>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [item, setItem] = useState<EditItemItem | null>(null);
+  const [categories, setCategories] = useState<EditItemCategory[]>([]);
   const [form, setForm] = useState({ title: "", category: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

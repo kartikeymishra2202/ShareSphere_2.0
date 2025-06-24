@@ -149,7 +149,13 @@ const ChatBox = ({
         ) : (
           messages.map((msg, i) => (
             <div key={i} className="mb-2">
-              <b>{msg.senderID?.name || "User"}:</b> {msg.text}
+              <b>
+                {typeof msg.senderID === "object"
+                  ? msg.senderID.name || "User"
+                  : "User"}
+                :
+              </b>{" "}
+              {msg.text}
               <div className="text-xs text-gray-400">
                 {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ""}
               </div>

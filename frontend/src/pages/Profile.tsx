@@ -3,8 +3,15 @@ import { getProfile, updateProfile } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  location?: string;
+}
+
 const Profile = () => {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", location: "" });
   const [loading, setLoading] = useState(false);

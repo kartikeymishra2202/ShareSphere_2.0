@@ -10,10 +10,25 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+interface ItemDetailItem {
+  _id: string;
+  title: string;
+  category: { _id: string; label: string };
+  status: string;
+  ownerID: { _id: string; name: string };
+}
+
+interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  location?: string;
+}
+
 const ItemDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [item, setItem] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [item, setItem] = useState<ItemDetailItem | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -45,10 +60,10 @@ const ItemDetail = () => {
     try {
       await apiFetch("/requests", {
         method: "POST",
-        body: JSON.stringify({ itemID: item._id }),
+        body: JSON.stringify({ itemID: item?._id }),
       });
       setSuccess("Request sent!");
-    } catch (err: any) {
+    } catch {
       setError(
         "Could not send request. You may have already requested this item or are not allowed."
       );
@@ -65,10 +80,7 @@ const ItemDetail = () => {
       </div>
     );
 
-  const isOwner =
-    profile &&
-    item.ownerID &&
-    (profile._id === item.ownerID._id || profile.id === item.ownerID._id);
+  const isOwner = profile && item.ownerID && profile._id === item.ownerID._id;
 
   return (
     <div className="max-w-lg mx-auto py-8">
