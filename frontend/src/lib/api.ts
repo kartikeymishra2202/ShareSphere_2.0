@@ -1,4 +1,4 @@
-const API_URL = "https://sharesphere-2-0.onrender.com";
+const API_URL = "https://sharesphere-2-0.onrender.com/api";
 
 export const getToken = () => localStorage.getItem("token");
 
