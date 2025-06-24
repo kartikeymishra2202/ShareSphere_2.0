@@ -16,8 +16,9 @@ dotenv.config();
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:3000", // local dev
-  "https://your-frontend-domain.com", // <-- replace with your deployed frontend URL
+  "http://localhost:3000", // React dev
+  "http://localhost:5173", // Vite dev
+  "https://share-sphere-2-0.vercel.app", // deployed frontend
 ];
 app.use(
   cors({
