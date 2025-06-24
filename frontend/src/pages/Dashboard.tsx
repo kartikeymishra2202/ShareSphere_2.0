@@ -137,10 +137,6 @@ const ChatBox = ({
     }
   };
 
-  useEffect(() => {
-    if (!chatOpen && messages.length > 0) setMessages([]); // clear messages when chat closes
-  }, [chatOpen]);
-
   return (
     <div className="flex flex-col h-80">
       <div className="flex-1 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
