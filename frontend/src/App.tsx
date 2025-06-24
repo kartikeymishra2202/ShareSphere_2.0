@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,11 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Browse from "./pages/Browse";
+import AddItem from "./pages/AddItem";
+import Profile from "./pages/Profile";
+import EditItem from "./pages/EditItem";
+import ItemDetail from "./pages/ItemDetail";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +27,11 @@ const App = () => (
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/browse" element={<Browse />} />
+          <Route path="/add-item" element={<AddItem />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/edit-item/:id" element={<EditItem />} />
+          <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -36,13 +36,13 @@ const SignIn = () => {
       });
 
       localStorage.setItem("token", res.token);
+      localStorage.setItem("userId", res.user.id || res.user._id);
 
       toast({
         title: "Welcome back!",
         description: "Successfully signed in to ShareSphere.",
       });
 
-      // Redirect to dashboard after a short delay
       setTimeout(() => {
         navigate("/dashboard");
       }, 1000);

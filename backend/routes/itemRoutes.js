@@ -6,6 +6,8 @@ import {
   getFeaturedItems,
   updateItem,
   deleteItem,
+  getAllItems,
+  getItemById,
 } from "../controllers/itemController.js";
 
 const router = express.Router();
@@ -15,5 +17,7 @@ router.get("/mine", authMiddleware, getMyItems);
 router.get("/featured", getFeaturedItems);
 router.put("/:id", authMiddleware, updateItem);
 router.delete("/:id", authMiddleware, deleteItem);
+router.get("/", getAllItems);
+router.get("/:id", getItemById);
 
 export default router;

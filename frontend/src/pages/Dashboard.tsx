@@ -21,6 +21,13 @@ import {
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { io as clientIO, Socket } from "socket.io-client";
 
 interface Item {
   _id: string;
@@ -33,11 +40,138 @@ interface Item {
 interface Request {
   _id: string;
   itemID: { title: string };
-  requesterID?: { name: string };
-  ownerID?: { name: string };
+  requesterID?: { name: string; email: string; location: string };
+  ownerID?: { name: string; email: string; location: string };
   status: string;
   requestDate: string;
 }
+
+interface Message {
+  _id?: string;
+  senderID: { _id: string; name?: string } | string;
+  text: string;
+  timestamp?: string;
+}
+
+const ChatBox = ({
+  requestId,
+  currentUserId,
+}: {
+  requestId: string;
+  currentUserId: string;
+}) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  useEffect(() => {
+    const s = clientIO("http://localhost:5000");
+    setSocket(s);
+    s.emit("join", requestId);
+    return () => {
+      s.disconnect();
+    };
+  }, [requestId]);
+
+  useEffect(() => {
+    const active = true;
+    const fetchMessages = async () => {
+      try {
+        const chat = await apiFetch(`/requests/${requestId}/chat`);
+        if (active) setMessages(chat.messages || []);
+      } catch {
+        if (active) setError("Failed to load chat");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchMessages();
+  }, [requestId]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { message: Message }) => {
+      const senderId = (
+        data.message.senderID &&
+        (typeof data.message.senderID === "object"
+          ? data.message.senderID._id
+          : data.message.senderID)
+      )?.toString();
+      const userId = currentUserId?.toString();
+      console.log(
+        "senderId:",
+        senderId,
+        "currentUserId:",
+        userId,
+        senderId === userId
+      );
+      setMessages((prev) => [...prev, data.message]);
+      if (senderId !== userId) {
+        toast({ title: "New message", description: data.message.text });
+      }
+    };
+    socket.on("chat:new_message", handler);
+    return () => {
+      socket.off("chat:new_message", handler);
+    };
+  }, [socket, currentUserId, toast]);
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    setSending(true);
+    try {
+      await apiFetch(`/requests/${requestId}/chat`, {
+        method: "POST",
+        body: JSON.stringify({ text: input }),
+      });
+      setInput("");
+    } catch {
+      setError("Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-80">
+      <div className="flex-1 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
+        {loading ? (
+          <div>Loading chat...</div>
+        ) : error ? (
+          <div className="text-red-500">{error}</div>
+        ) : messages.length === 0 ? (
+          <div className="text-gray-500">No messages yet.</div>
+        ) : (
+          messages.map((msg, i) => (
+            <div key={i} className="mb-2">
+              <b>{msg.senderID?.name || "User"}:</b> {msg.text}
+              <div className="text-xs text-gray-400">
+                {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ""}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      <form onSubmit={sendMessage} className="flex gap-2">
+        <input
+          className="flex-1 border rounded px-2 py-1"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+          disabled={sending}
+        />
+        <Button type="submit" disabled={sending || !input.trim()}>
+          Send
+        </Button>
+      </form>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -46,6 +180,8 @@ const Dashboard = () => {
   const [receivedRequests, setReceivedRequests] = useState<Request[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatRequestId, setChatRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -110,6 +246,45 @@ const Dashboard = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const handleApprove = async (id: string) => {
+    try {
+      await apiFetch(`/requests/${id}/approve`, { method: "PATCH" });
+      toast({ title: "Request approved" });
+      setReceivedRequests((prev) =>
+        prev.map((r) => (r._id === id ? { ...r, status: "Approved" } : r))
+      );
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to approve request",
+      });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await apiFetch(`/requests/${id}/reject`, { method: "PATCH" });
+      toast({ title: "Request rejected" });
+      setReceivedRequests((prev) =>
+        prev.map((r) => (r._id === id ? { ...r, status: "Rejected" } : r))
+      );
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reject request",
+      });
+    }
+  };
+
+  const openChat = (requestId: string) => {
+    setChatRequestId(requestId);
+    setChatOpen(true);
+  };
+
+  const closeChat = () => setChatOpen(false);
 
   if (isLoading) {
     return (
@@ -305,9 +480,11 @@ const Dashboard = () => {
                         <span className="text-sm text-gray-600">
                           {item.requests.length} pending requests
                         </span>
-                        <Button variant="outline" size="sm">
-                          Manage
-                        </Button>
+                        <Link to={`/edit-item/${item._id}`}>
+                          <Button variant="outline" size="sm">
+                            Manage
+                          </Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>
@@ -359,6 +536,22 @@ const Dashboard = () => {
                           <p className="text-sm text-gray-500 mt-1">
                             {new Date(request.requestDate).toLocaleDateString()}
                           </p>
+                          <div className="text-xs mt-2 text-left">
+                            <b>Lender:</b> {request.ownerID?.name || "Unknown"}
+                            <br />
+                            <b>Email:</b> {request.ownerID?.email || "-"}
+                            <br />
+                            <b>Location:</b> {request.ownerID?.location || "-"}
+                          </div>
+                          {request.status.toLowerCase() === "approved" && (
+                            <Button
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => openChat(request._id)}
+                            >
+                              Chat
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -396,16 +589,45 @@ const Dashboard = () => {
                               Requested by{" "}
                               {request.requesterID?.name || "Unknown"}
                             </p>
+                            <div className="text-xs mt-1">
+                              <b>Borrower:</b>{" "}
+                              {request.requesterID?.name || "Unknown"}
+                              <br />
+                              <b>Email:</b> {request.requesterID?.email || "-"}
+                              <br />
+                              <b>Location:</b>{" "}
+                              {request.requesterID?.location || "-"}
+                            </div>
+                            {request.status.toLowerCase() === "approved" && (
+                              <Button
+                                size="sm"
+                                className="mt-2"
+                                onClick={() => openChat(request._id)}
+                              >
+                                Chat
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleApprove(request._id)}
+                            disabled={
+                              request.status.toLowerCase() !== "pending"
+                            }
                           >
                             Approve
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReject(request._id)}
+                            disabled={
+                              request.status.toLowerCase() !== "pending"
+                            }
+                          >
                             Reject
                           </Button>
                         </div>
@@ -428,6 +650,19 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Dialog open={chatOpen} onOpenChange={closeChat}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>Chat</DialogTitle>
+          </DialogHeader>
+          {chatRequestId && (
+            <ChatBox
+              requestId={chatRequestId}
+              currentUserId={localStorage.getItem("userId") || ""}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

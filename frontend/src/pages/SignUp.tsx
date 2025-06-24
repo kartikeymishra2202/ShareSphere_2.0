@@ -52,13 +52,13 @@ const SignUp = () => {
       });
 
       localStorage.setItem("token", res.token);
+      localStorage.setItem("userId", res.user.id || res.user._id);
 
       toast({
         title: "Success!",
         description: "Account created successfully. Welcome to ShareSphere!",
       });
 
-      // Redirect to dashboard after a short delay
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1000);

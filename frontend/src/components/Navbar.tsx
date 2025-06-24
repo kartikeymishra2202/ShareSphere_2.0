@@ -37,7 +37,7 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Menu */}
+          {/*--------Normal Desktop Menu------------------ */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
               <Link
@@ -116,7 +116,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/*--------------------- Mobile Width Menu ------------*/}
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50">
