@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ const SignUp = () => {
     password: "",
     confirmPassword: "",
   });
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +59,7 @@ const SignUp = () => {
         title: "Success!",
         description: "Account created successfully. Welcome to ShareSphere!",
       });
-
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
+      navigate("/dashboard");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error

@@ -43,9 +43,7 @@ const SignIn = () => {
         description: "Successfully signed in to ShareSphere.",
       });
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
+      navigate("/dashboard");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
