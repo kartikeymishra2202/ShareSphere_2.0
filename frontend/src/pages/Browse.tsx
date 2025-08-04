@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch } from "@/lib/api"; 
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search, Tag, Star, Heart, Package } from "lucide-react";
-
 
 interface Item {
   _id: string;
@@ -26,12 +25,10 @@ interface Category {
   label: string;
 }
 
-
 const ItemCard = ({ item }: { item: Item }) => {
   return (
     <Card className="w-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all duration-300 group shadow-lg hover:shadow-xl rounded-2xl">
       <div className="relative">
-        
         <div className="h-56 bg-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
           <Package className="w-16 h-16 text-slate-400" />
         </div>
@@ -65,21 +62,17 @@ const ItemCard = ({ item }: { item: Item }) => {
 };
 
 const Browse = () => {
-  
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  
   useEffect(() => {
     const fetchData = async () => {
       try {
-      
         const [itemsData, categoriesData] = await Promise.all([
           apiFetch("/items"),
           apiFetch("/categories"),
@@ -95,18 +88,15 @@ const Browse = () => {
     fetchData();
   }, []);
 
-  
   const filteredItems = useMemo(() => {
     return items
       .filter((item) => {
-       
         if (selectedCategory === "all") {
           return true;
         }
         return item.category?._id === selectedCategory;
       })
       .filter((item) => {
-       
         return item.title.toLowerCase().includes(searchTerm.toLowerCase());
       });
   }, [items, searchTerm, selectedCategory]);
@@ -121,14 +111,13 @@ const Browse = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
- 
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link
             to="/"
             className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-500"
           >
-            Lendr
+            ShareSphere
           </Link>
           <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
             <Link to="/dashboard" className="hover:text-indigo-600">
@@ -145,7 +134,6 @@ const Browse = () => {
       </header>
 
       <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-       
         <div className="bg-white p-6 rounded-2xl shadow-xl mb-12">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
             <div className="col-span-1 md:col-span-3 lg:col-span-2">
@@ -193,7 +181,6 @@ const Browse = () => {
           </div>
         </div>
 
-       
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
             Browse Community Items
@@ -203,7 +190,6 @@ const Browse = () => {
           </p>
         </div>
 
-       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
           {filteredItems.map((item) => (
             <ItemCard key={item._id} item={item} />
