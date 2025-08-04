@@ -9,7 +9,7 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Browse from "./pages/Browse";
-import AddItem from "./pages/AddItem";
+
 import Profile from "./pages/Profile";
 import EditItem from "./pages/EditItem";
 import ItemDetail from "./pages/ItemDetail";
@@ -28,7 +28,7 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/browse" element={<Browse />} />
-          <Route path="/add-item" element={<AddItem />} />
+
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-item/:id" element={<EditItem />} />
           <Route path="/item/:id" element={<ItemDetail />} />
