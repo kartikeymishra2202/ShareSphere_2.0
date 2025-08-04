@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/dialog";
 import { io as clientIO, Socket } from "socket.io-client";
 
-// --- THE RESPONSIVE HOOK ---
 const MOBILE_BREAKPOINT = 768;
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
@@ -57,7 +56,6 @@ export function useIsMobile() {
   return !!isMobile;
 }
 
-// --- INTERFACES ---
 interface Item {
   _id: string;
   title: string;
@@ -84,7 +82,6 @@ interface Message {
   timestamp?: string;
 }
 
-// --- AddItemModal Component ---
 const AddItemModal = ({
   open,
   onOpenChange,
@@ -200,7 +197,6 @@ const AddItemModal = ({
   );
 };
 
-// --- ChatBox Component ---
 const ChatBox = ({
   requestId,
   currentUserId,
@@ -217,7 +213,7 @@ const ChatBox = ({
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const s = clientIO("http://localhost:5000"); // Ensure your backend URL is correct
+    const s = clientIO("http://localhost:5000");
     setSocket(s);
     s.emit("join", requestId);
     return () => {
@@ -330,7 +326,7 @@ const ChatBox = ({
   );
 };
 
-// --- Desktop Sidebar ---
+
 const Sidebar = ({
   activeView,
   setActiveView,
@@ -433,7 +429,7 @@ const Sidebar = ({
   );
 };
 
-// --- Mobile Bottom Navigation Bar ---
+
 const BottomNavBar = ({
   activeView,
   setActiveView,
@@ -506,7 +502,7 @@ const BottomNavBar = ({
   );
 };
 
-// --- Card Components ---
+
 const PerformanceCard = ({
   title,
   value,
@@ -589,7 +585,7 @@ const ActionableRequestCard = ({
   </div>
 );
 
-// --- MAIN DASHBOARD COMPONENT ---
+
 const Dashboard = () => {
   const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState("overview");
@@ -686,7 +682,7 @@ const Dashboard = () => {
     }
   };
 
-  // FULLY RESTORED RENDERCONTENT LOGIC
+ 
   const renderContent = () => {
     switch (activeView) {
       case "my-items":

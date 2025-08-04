@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getProfile, updateProfile, apiFetch } from "@/lib/api"; // CORRECTED: Re-added getProfile and updateProfile
+import { getProfile, updateProfile, apiFetch } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Mail, Edit, Save, X, Package, Star, User } from "lucide-react";
 
-// --- Interfaces ---
 interface UserProfile {
   _id: string;
   name: string;
@@ -22,7 +21,6 @@ interface Item {
   status: string;
 }
 
-// --- Main Profile Component ---
 const Profile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [myItems, setMyItems] = useState<Item[]>([]);
@@ -36,11 +34,9 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  // --- Data Fetching ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // CORRECTED: Using getProfile() as in your original code
         const [profileData, itemsData] = await Promise.all([
           getProfile(),
           apiFetch("/items/mine"),
@@ -69,7 +65,6 @@ const Profile = () => {
     fetchData();
   }, [toast]);
 
-  // --- Handlers ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
@@ -79,7 +74,6 @@ const Profile = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      // CORRECTED: Using updateProfile() as in your original code
       const updatedProfile = await updateProfile(formState);
 
       setProfile(updatedProfile);
@@ -150,15 +144,11 @@ const Profile = () => {
 
       <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* --- Main Content --- */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Profile Header Card */}
             <Card className="w-full rounded-2xl shadow-lg overflow-hidden">
-              {/* Banner Image Placeholder */}
               <div className="h-48 bg-gradient-to-r from-indigo-400 to-violet-500"></div>
 
               <div className="px-6 pb-6">
-                {/* Profile Picture & Actions */}
                 <div className="flex justify-between items-start -mt-16">
                   <div className="w-32 h-32 rounded-full border-4 border-white bg-slate-300 flex items-center justify-center shadow-md">
                     <User className="w-16 h-16 text-slate-500" />
@@ -182,7 +172,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Profile Info */}
                 <div className="mt-4">
                   {editMode ? (
                     <Input
@@ -227,7 +216,6 @@ const Profile = () => {
               </div>
             </Card>
 
-            {/* User's Listed Items */}
             <Card className="w-full rounded-2xl shadow-lg">
               <CardHeader>
                 <CardTitle>Your Listed Items</CardTitle>
@@ -261,7 +249,6 @@ const Profile = () => {
             </Card>
           </div>
 
-          {/* --- Sidebar --- */}
           <div className="lg:col-span-1 space-y-8">
             <Card className="w-full rounded-2xl shadow-lg">
               <CardHeader>
