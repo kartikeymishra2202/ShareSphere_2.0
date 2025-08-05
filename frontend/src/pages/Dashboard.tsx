@@ -326,7 +326,6 @@ const ChatBox = ({
   );
 };
 
-
 const Sidebar = ({
   activeView,
   setActiveView,
@@ -429,7 +428,6 @@ const Sidebar = ({
   );
 };
 
-
 const BottomNavBar = ({
   activeView,
   setActiveView,
@@ -442,7 +440,15 @@ const BottomNavBar = ({
   const navItems = [
     { id: "overview", label: "Home", icon: LayoutDashboard, type: "view" },
     { id: "my-items", label: "My Items", icon: Package, type: "view" },
+    { id: "sent-requests", label: "Sent Requests", icon: Send, type: "view" },
+
     { id: "add-item", label: "Add", icon: Plus, type: "action" },
+    {
+      id: "received-requests",
+      label: "Received Requests",
+      icon: Inbox,
+      type: "view",
+    },
     {
       id: "browse",
       label: "Browse",
@@ -501,7 +507,6 @@ const BottomNavBar = ({
     </div>
   );
 };
-
 
 const PerformanceCard = ({
   title,
@@ -584,7 +589,6 @@ const ActionableRequestCard = ({
     </div>
   </div>
 );
-
 
 const Dashboard = () => {
   const isMobile = useIsMobile();
@@ -682,7 +686,6 @@ const Dashboard = () => {
     }
   };
 
- 
   const renderContent = () => {
     switch (activeView) {
       case "my-items":
