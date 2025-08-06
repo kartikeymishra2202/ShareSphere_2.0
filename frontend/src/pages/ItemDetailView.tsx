@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { getItemById, apiFetch, getProfile } from "@/lib/api";
 import {
   Card,
@@ -9,15 +8,15 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
-interface ItemDetailItem {
+interface ItemDetail {
   _id: string;
   title: string;
   category: { _id: string; label: string };
   status: string;
   ownerID: { _id: string; name: string };
 }
-
 interface UserProfile {
   _id: string;
   name: string;
@@ -25,21 +24,28 @@ interface UserProfile {
   location?: string;
 }
 
-const ItemDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const [item, setItem] = useState<ItemDetailItem | null>(null);
+interface ItemDetailViewProps {
+  itemId: string;
+  onBack: () => void;
+}
+
+export default function ItemDetailView({
+  itemId,
+  onBack,
+}: ItemDetailViewProps) {
+  const [item, setItem] = useState<ItemDetail | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [requesting, setRequesting] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [itemData, userData] = await Promise.all([
-          getItemById(id!),
+          getItemById(itemId),
           getProfile().catch(() => null),
         ]);
         setItem(itemData);
@@ -51,7 +57,7 @@ const ItemDetail = () => {
       }
     };
     fetchData();
-  }, [id]);
+  }, [itemId]);
 
   const handleRequest = async () => {
     setRequesting(true);
@@ -62,10 +68,10 @@ const ItemDetail = () => {
         method: "POST",
         body: JSON.stringify({ itemID: item?._id }),
       });
-      setSuccess("Request sent!");
+      setSuccess("Request sent successfully!");
     } catch {
       setError(
-        "Could not send request. You may have already requested this item or are not allowed."
+        "Could not send request. You may have already requested this item."
       );
     } finally {
       setRequesting(false);
@@ -73,7 +79,8 @@ const ItemDetail = () => {
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
-  if (!item)
+
+  if (error || !item)
     return (
       <div className="p-8 text-center text-red-500">
         {error || "Item not found"}
@@ -83,7 +90,11 @@ const ItemDetail = () => {
   const isOwner = profile && item.ownerID && profile._id === item.ownerID._id;
 
   return (
-    <div className="max-w-lg mx-auto py-8">
+    <div className="max-w-lg mx-auto">
+      <Button variant="outline" onClick={onBack} className="mb-4">
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Browse
+      </Button>
       <Card>
         <CardHeader>
           <CardTitle>{item.title}</CardTitle>
@@ -103,26 +114,19 @@ const ItemDetail = () => {
           {!isOwner && (
             <Button
               onClick={handleRequest}
-              disabled={requesting}
+              disabled={requesting || success !== ""}
               className="mt-4"
             >
               {requesting ? "Requesting..." : "Request to Borrow"}
             </Button>
           )}
           {isOwner && (
-            <div className="text-sm text-gray-500 mt-2">You own this item.</div>
+            <div className="text-sm text-gray-500 mt-2">
+              This is one of your items.
+            </div>
           )}
         </CardContent>
       </Card>
-      <Button
-        variant="outline"
-        className="mt-4 w-full"
-        onClick={() => navigate(-1)}
-      >
-        Back
-      </Button>
     </div>
   );
-};
-
-export default ItemDetail;
+}

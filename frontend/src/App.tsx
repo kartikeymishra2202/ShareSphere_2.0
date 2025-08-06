@@ -8,11 +8,11 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import Browse from "./pages/Browse";
+import Browse from "./pages/BrowseView";
 
-import Profile from "./pages/Profile";
-import EditItem from "./pages/EditItem";
-import ItemDetail from "./pages/ItemDetail";
+import Profile from "./pages/ProfileView";
+import EditItem from "./pages/EditItemView";
+import ItemDetail from "./pages/ItemDetailView";
 
 const queryClient = new QueryClient();
 

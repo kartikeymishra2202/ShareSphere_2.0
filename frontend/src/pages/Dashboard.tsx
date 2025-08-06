@@ -1,4 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,504 +17,43 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
   Package,
   Send,
   Inbox,
-  LayoutDashboard,
+  MessageSquare,
   User,
   Calendar,
-  MessageSquare,
   ArrowUpRight,
   ArrowDownRight,
-  ArrowLeft,
-  Search,
-  UserCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { apiFetch } from "@/lib/api";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { io as clientIO, Socket } from "socket.io-client";
+
+
+import { Sidebar } from "./Sidebar";
+import { BottomNavBar } from "./BottomNavbar";
+import { AddItemModal } from "./AddItemModal";
+import { ChatBox } from "./ChatBox";
+import BrowseView from "./BrowseView";
+import ProfileView from "./ProfileView";
+import EditItemView from "./EditItemView";
+import ItemDetailView from "./ItemDetailView";
+
+
+import { Item, Request } from "./types";
 
 const MOBILE_BREAKPOINT = 768;
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
     undefined
   );
-
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
+    const onChange = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     mql.addEventListener("change", onChange);
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     return () => mql.removeEventListener("change", onChange);
   }, []);
-
   return !!isMobile;
 }
-
-interface Item {
-  _id: string;
-  title: string;
-  category: { label: string };
-  status: string;
-  requests: string[];
-}
-interface Request {
-  _id: string;
-  itemID: { title: string };
-  requesterID?: { name: string; email: string; location: string };
-  ownerID?: { name: string; email: string; location: string };
-  status: string;
-  requestDate: string;
-}
-interface Category {
-  _id: string;
-  label: string;
-}
-interface Message {
-  _id?: string;
-  senderID: { _id: string; name?: string } | string;
-  text: string;
-  timestamp?: string;
-}
-
-const AddItemModal = ({
-  open,
-  onOpenChange,
-  onItemAdded,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onItemAdded: () => void;
-}) => {
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (open && categories.length === 0) {
-      apiFetch("/categories")
-        .then(setCategories)
-        .catch(() => setError("Could not load categories."));
-    }
-  }, [open, categories.length]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !category) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await apiFetch("/items", {
-        method: "POST",
-        body: JSON.stringify({ title, category }),
-      });
-      onItemAdded();
-      onOpenChange(false);
-      setTitle("");
-      setCategory("");
-    } catch (err) {
-      setError("Failed to add item. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] sm:max-w-[480px] bg-white rounded-xl shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-slate-800">
-            Add a New Item
-          </DialogTitle>
-          <DialogDescription>
-            List an item to share it with the community.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 gap-2">
-              <label htmlFor="title" className="font-medium text-slate-600">
-                Title
-              </label>
-              <input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="h-10 rounded-md border border-slate-300 px-3 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                placeholder="e.g., Electric Drill"
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <label htmlFor="category" className="font-medium text-slate-600">
-                Category
-              </label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="h-10 rounded-md border border-slate-300 px-3 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                <option value="">Select a category...</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {error && (
-              <p className="text-center text-red-500 text-sm">{error}</p>
-            )}
-          </div>
-          <DialogFooter className="!grid-cols-2 gap-2 sm:flex">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              {" "}
-              {loading ? "Adding..." : "Add Item"}{" "}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const ChatBox = ({
-  requestId,
-  currentUserId,
-}: {
-  requestId: string;
-  currentUserId: string;
-}) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const { toast } = useToast();
-  const [socket, setSocket] = useState<Socket | null>(null);
-
-  useEffect(() => {
-    const s = clientIO("http://localhost:5000");
-    setSocket(s);
-    s.emit("join", requestId);
-    return () => {
-      s.disconnect();
-    };
-  }, [requestId]);
-
-  useEffect(() => {
-    let active = true;
-    const fetchMessages = async () => {
-      try {
-        const chat = await apiFetch(`/requests/${requestId}/chat`);
-        if (active) setMessages(chat.messages || []);
-      } catch {
-        if (active) setError("Failed to load chat");
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    fetchMessages();
-    return () => {
-      active = false;
-    };
-  }, [requestId]);
-
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (data: { message: Message }) => {
-      const senderId = (
-        data.message.senderID &&
-        (typeof data.message.senderID === "object"
-          ? data.message.senderID._id
-          : data.message.senderID)
-      )?.toString();
-      const userId = currentUserId?.toString();
-      setMessages((prev) => [...prev, data.message]);
-      if (senderId !== userId) {
-        toast({ title: "New message", description: data.message.text });
-      }
-    };
-    socket.on("chat:new_message", handler);
-    return () => {
-      socket.off("chat:new_message", handler);
-    };
-  }, [socket, currentUserId, toast]);
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    setSending(true);
-    try {
-      await apiFetch(`/requests/${requestId}/chat`, {
-        method: "POST",
-        body: JSON.stringify({ text: input }),
-      });
-      setInput("");
-    } catch {
-      setError("Failed to send message");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-96">
-      <div className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-slate-50">
-        {loading ? (
-          <div className="text-slate-500">Loading chat...</div>
-        ) : error ? (
-          <div className="text-red-500">{error}</div>
-        ) : messages.length === 0 ? (
-          <div className="text-center text-slate-500 py-8">
-            No messages yet.
-          </div>
-        ) : (
-          messages.map((msg, i) => (
-            <div key={msg._id || i} className="mb-3">
-              <p className="font-semibold text-slate-800 text-sm">
-                {typeof msg.senderID === "object"
-                  ? msg.senderID.name || "User"
-                  : "User"}
-              </p>
-              <div className="bg-white p-2 rounded-md text-slate-700 break-words">
-                {msg.text}
-              </div>
-              <div className="text-xs text-slate-400 mt-1">
-                {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ""}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      <form onSubmit={sendMessage} className="flex gap-2">
-        <input
-          className="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          disabled={sending}
-        />
-        <Button
-          type="submit"
-          disabled={sending || !input.trim()}
-          className="bg-indigo-600 hover:bg-indigo-700"
-        >
-          Send
-        </Button>
-      </form>
-    </div>
-  );
-};
-
-const Sidebar = ({
-  activeView,
-  setActiveView,
-  onAddItemClick,
-}: {
-  activeView: string;
-  setActiveView: (view: string) => void;
-  onAddItemClick: () => void;
-}) => {
-  const navItems = [
-    { id: "overview", label: "Dashboard", icon: LayoutDashboard, type: "view" },
-    { id: "my-items", label: "My Items", icon: Package, type: "view" },
-    { id: "sent-requests", label: "Sent Requests", icon: Send, type: "view" },
-    {
-      id: "received-requests",
-      label: "Received Requests",
-      icon: Inbox,
-      type: "view",
-    },
-    {
-      id: "browse",
-      label: "Browse Items",
-      icon: Search,
-      type: "link",
-      path: "/browse",
-    },
-  ];
-
-  return (
-    <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex-col font-sans hidden md:flex">
-      <div className="h-20 flex items-center px-6 border-b border-slate-200">
-        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-500">
-          ShareSphere
-        </h1>
-      </div>
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navItems.map((item) => {
-          const isActive = activeView === item.id;
-          const className = `w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-            isActive
-              ? "bg-indigo-600 text-white shadow-md"
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-          }`;
-          if (item.type === "link") {
-            return (
-              <Link to={item.path!} key={item.id} className={className}>
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          }
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={className}
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-      <div className="p-4 m-4 rounded-lg bg-slate-100 text-center">
-        <p className="text-sm font-semibold text-slate-800 mb-2">
-          Ready to Share?
-        </p>
-        <Button
-          onClick={onAddItemClick}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Item
-        </Button>
-      </div>
-      <div className="px-4 py-3 border-t border-slate-200">
-        <Link
-          to="/profile"
-          className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100"
-        >
-          <UserCircle className="h-10 w-10 text-slate-400" />
-          <div>
-            <p className="font-semibold text-sm text-slate-700">
-              Update Profile
-            </p>
-            <p className="text-xs text-slate-500">View your profile</p>
-          </div>
-        </Link>
-      </div>
-      <div className="p-4 border-t border-slate-200">
-        <Link
-          to="/"
-          className="flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Landing Page
-        </Link>
-      </div>
-    </aside>
-  );
-};
-
-const BottomNavBar = ({
-  activeView,
-  setActiveView,
-  onAddItemClick,
-}: {
-  activeView: string;
-  setActiveView: (view: string) => void;
-  onAddItemClick: () => void;
-}) => {
-  const navItems = [
-    { id: "overview", label: "Home", icon: LayoutDashboard, type: "view" },
-    { id: "my-items", label: "My Items", icon: Package, type: "view" },
-    { id: "sent-requests", label: "Sent Requests", icon: Send, type: "view" },
-
-    { id: "add-item", label: "Add", icon: Plus, type: "action" },
-    {
-      id: "received-requests",
-      label: "Received Requests",
-      icon: Inbox,
-      type: "view",
-    },
-    {
-      id: "browse",
-      label: "Browse",
-      icon: Search,
-      type: "link",
-      path: "/browse",
-    },
-    {
-      id: "profile",
-      label: "Profile",
-      icon: UserCircle,
-      type: "link",
-      path: "/profile",
-    },
-  ];
-
-  return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-t-lg z-50 h-20">
-      <div className="flex justify-around items-center h-full">
-        {navItems.map((item) => {
-          if (item.type === "action") {
-            return (
-              <Button
-                key={item.id}
-                onClick={onAddItemClick}
-                className="bg-indigo-600 rounded-full h-14 w-14 shadow-lg -translate-y-4 flex items-center justify-center"
-              >
-                <Plus className="h-7 w-7 text-white" />
-              </Button>
-            );
-          }
-          const isActive = activeView === item.id;
-          const className = `flex flex-col items-center justify-center gap-1 transition-colors ${
-            isActive ? "text-indigo-600" : "text-slate-500"
-          }`;
-          if (item.type === "link") {
-            return (
-              <Link to={item.path!} key={item.id} className={className}>
-                <item.icon className="h-6 w-6" />
-                <span className="text-xs">{item.label}</span>
-              </Link>
-            );
-          }
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={className}
-            >
-              <item.icon className="h-6 w-6" />
-              <span className="text-xs">{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 const PerformanceCard = ({
   title,
@@ -542,6 +89,7 @@ const PerformanceCard = ({
     </div>
   );
 };
+
 const ActionableRequestCard = ({
   request,
   onApprove,
@@ -603,6 +151,9 @@ const Dashboard = () => {
   const [chatRequestId, setChatRequestId] = useState<string | null>(null);
   const currentUserId = useMemo(() => localStorage.getItem("userId") || "", []);
 
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [viewingItemId, setViewingItemId] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       const [itemsRes, sentRes, receivedRes] = await Promise.all([
@@ -632,16 +183,10 @@ const Dashboard = () => {
     fetchData().finally(() => setIsLoading(false));
   }, [fetchData]);
 
-  const pendingRequests = useMemo(
-    () => receivedRequests.filter((r) => r.status.toLowerCase() === "pending"),
-    [receivedRequests]
-  );
-  const lentItemsCount = useMemo(
-    () =>
-      receivedRequests.filter((r) => r.status.toLowerCase() === "approved")
-        .length,
-    [receivedRequests]
-  );
+  const handleItemUpdated = () => {
+    toast({ title: "Success!", description: "Item updated successfully." });
+    fetchData();
+  };
 
   const handleItemAdded = () => {
     toast({
@@ -651,20 +196,19 @@ const Dashboard = () => {
     });
     fetchData();
   };
+
   const handleApprove = async (id: string) => {
     await apiFetch(`/requests/${id}/approve`, { method: "PATCH" });
     toast({ title: "Request Approved!" });
-    setReceivedRequests((prev) =>
-      prev.map((r) => (r._id === id ? { ...r, status: "Approved" } : r))
-    );
+    fetchData();
   };
+
   const handleReject = async (id: string) => {
     await apiFetch(`/requests/${id}/reject`, { method: "PATCH" });
     toast({ title: "Request Rejected" });
-    setReceivedRequests((prev) =>
-      prev.map((r) => (r._id === id ? { ...r, status: "Rejected" } : r))
-    );
+    fetchData();
   };
+
   const openChat = (requestId: string) => {
     setChatRequestId(requestId);
     setChatOpen(true);
@@ -686,8 +230,40 @@ const Dashboard = () => {
     }
   };
 
+  const pendingRequests = useMemo(
+    () => receivedRequests.filter((r) => r.status.toLowerCase() === "pending"),
+    [receivedRequests]
+  );
+  const lentItemsCount = useMemo(
+    () =>
+      receivedRequests.filter((r) => r.status.toLowerCase() === "approved")
+        .length,
+    [receivedRequests]
+  );
+
   const renderContent = () => {
+    if (editingItemId) {
+      return (
+        <EditItemView
+          itemId={editingItemId}
+          onBack={() => setEditingItemId(null)}
+          onItemUpdated={handleItemUpdated}
+        />
+      );
+    }
+    if (viewingItemId) {
+      return (
+        <ItemDetailView
+          itemId={viewingItemId}
+          onBack={() => setViewingItemId(null)}
+        />
+      );
+    }
     switch (activeView) {
+      case "browse":
+        return <BrowseView onViewDetails={setViewingItemId} />;
+      case "profile":
+        return <ProfileView />;
       case "my-items":
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -716,11 +292,13 @@ const Dashboard = () => {
                     <span className="text-sm text-slate-500">
                       {item.requests.length} pending requests
                     </span>
-                    <Link to={`/edit-item/${item._id}`}>
-                      <Button variant="outline" size="sm">
-                        Manage
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingItemId(item._id)}
+                    >
+                      Manage
+                    </Button>
                   </CardContent>
                 </Card>
               ))
@@ -900,6 +478,41 @@ const Dashboard = () => {
     }
   };
 
+  const getHeaderInfo = () => {
+    if (editingItemId)
+      return {
+        title: "Edit Your Item",
+        description: "Update the details for your listed item.",
+      };
+    if (viewingItemId)
+      return {
+        title: "Item Details",
+        description: "View details and request to borrow this item.",
+      };
+    return {
+      title:
+        {
+          overview: `Good Evening, User!`,
+          "my-items": "My Items",
+          "sent-requests": "Sent Requests",
+          "received-requests": "Received Requests",
+          browse: "Browse Community Items",
+          profile: "My Profile",
+        }[activeView] || "Dashboard",
+      description:
+        {
+          overview: "Here's your lending summary for today.",
+          "my-items": "Manage your listed items from this panel.",
+          "sent-requests": "Track the status of your item requests.",
+          "received-requests": "Manage incoming requests for your items.",
+          browse: "Find and borrow items shared by the community.",
+          profile: "View and update your personal information.",
+        }[activeView] || "Welcome to your dashboard.",
+    };
+  };
+
+  const { title, description } = getHeaderInfo();
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -926,7 +539,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
       <div
-        className={`flex min-h-screen bg-slate-50 font-sans ${
+        className={`flex h-screen overflow-hidden bg-slate-50 font-sans ${
           isAddItemModalOpen || chatOpen ? "blur-sm" : ""
         } transition-all duration-300`}
       >
@@ -942,20 +555,10 @@ const Dashboard = () => {
         >
           <header className="mb-6 md:mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
-              {activeView === "overview"
-                ? `Good Evening, User!`
-                : `${
-                    activeView.charAt(0).toUpperCase() +
-                    activeView.slice(1).replace("-", " ")
-                  }`}
+              {title}
             </h2>
             <p className="text-slate-500 mt-1 text-sm md:text-base">
-              {activeView === "overview"
-                ? `Here's your lending summary for today.`
-                : `Manage your ${activeView.replace(
-                    "-",
-                    " "
-                  )} from this panel.`}
+              {description}
             </p>
           </header>
           {renderContent()}
