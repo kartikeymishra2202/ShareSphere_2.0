@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Search,
   UserCircle,
+  Inbox,
 } from "lucide-react";
 
 interface BottomNavBarProps {
@@ -23,7 +24,9 @@ export const BottomNavBar = ({
   const navItems = [
     { id: "overview", label: "Home", icon: LayoutDashboard },
     { id: "browse", label: "Browse", icon: Search },
+    { id: "sent-requests", label: "Sent Requests", icon: Send },
     { id: "add-item", label: "Add", icon: Plus },
+    { id: "received-requests", label: "Received Requests", icon: Inbox },
     { id: "my-items", label: "Items", icon: Package },
     { id: "profile", label: "Profile", icon: UserCircle },
   ];
