@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -18,36 +18,26 @@ export const ChatBox = ({ requestId, currentUserId }: ChatBoxProps) => {
   const [error, setError] = useState("");
   const { toast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     const s = clientIO("http://localhost:5000");
     setSocket(s);
-    s.emit("join", requestId);
+
     return () => {
       s.disconnect();
     };
   }, [requestId]);
 
   useEffect(() => {
-    let active = true;
-    const fetchMessages = async () => {
-      try {
-        const chat = await apiFetch(`/requests/${requestId}/chat`);
-        if (active) setMessages(chat.messages || []);
-      } catch {
-        if (active) setError("Failed to load chat");
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    fetchMessages();
-    return () => {
-      active = false;
-    };
-  }, [requestId]);
-
-  useEffect(() => {
     if (!socket) return;
+
+    socket.emit("join", requestId);
+
     const handler = (data: { message: Message }) => {
       setMessages((prev) => [...prev, data.message]);
       const senderId =
@@ -59,20 +49,43 @@ export const ChatBox = ({ requestId, currentUserId }: ChatBoxProps) => {
       }
     };
     socket.on("chat:new_message", handler);
+
+    let active = true;
+    const fetchMessages = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const chat = await apiFetch(`/requests/${requestId}/chat`);
+        if (active) setMessages(chat.messages || []);
+      } catch (err) {
+        console.error("Chat fetch error:", err);
+        if (active) setError("Failed to load chat history.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchMessages();
+
     return () => {
       socket.off("chat:new_message", handler);
+      active = false;
     };
-  }, [socket, currentUserId, toast]);
+  }, [socket, requestId, currentUserId, toast]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     setSending(true);
     try {
-      await apiFetch(`/requests/${requestId}/chat`, {
-        method: "POST",
-        body: JSON.stringify({ text: input }),
-      });
+      const newMessage: Message = await apiFetch(
+        `/requests/${requestId}/chat`,
+        {
+          method: "POST",
+          body: JSON.stringify({ text: input }),
+        }
+      );
+      setMessages((prev) => [...prev, newMessage]);
       setInput("");
     } catch {
       setError("Failed to send message");
@@ -85,12 +98,12 @@ export const ChatBox = ({ requestId, currentUserId }: ChatBoxProps) => {
     <div className="flex flex-col h-96">
       <div className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-slate-50">
         {loading ? (
-          <div className="text-slate-500">Loading chat...</div>
+          <div className="text-slate-500 text-center py-8">Loading chat...</div>
         ) : error ? (
-          <div className="text-red-500">{error}</div>
+          <div className="text-red-500 text-center py-8">{error}</div>
         ) : messages.length === 0 ? (
           <div className="text-center text-slate-500 py-8">
-            No messages yet.
+            No messages yet. Be the first to say hello!
           </div>
         ) : (
           messages.map((msg, i) => (
@@ -109,6 +122,7 @@ export const ChatBox = ({ requestId, currentUserId }: ChatBoxProps) => {
             </div>
           ))
         )}
+        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={sendMessage} className="flex gap-2">
         <input
