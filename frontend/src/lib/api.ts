@@ -1,4 +1,10 @@
+import { toast } from "sonner";
+
 const API_URL = "https://sharesphere-2-0.onrender.com/api";
+
+const REQUEST_TIMEOUT = 60000;
+const LONG_REQUEST_THRESHOLD = 5000;
+const SPIN_UP_TOAST_ID = "server-spin-up";
 
 export const getToken = () => localStorage.getItem("token");
 
@@ -10,14 +16,43 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     ...options.headers,
   };
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, REQUEST_TIMEOUT);
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText);
+  const loadingToastTimerId = setTimeout(() => {
+    toast.loading("Our server is spinning up... Please wait a moment!", {
+      id: SPIN_UP_TOAST_ID,
+    });
+  }, LONG_REQUEST_THRESHOLD);
+
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText);
+    }
+
+    return res.json();
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error("Request timeout");
+      toast.error("The request timed out. Please try again.", {
+        id: "timeout-error",
+      });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    clearTimeout(loadingToastTimerId);
+    toast.dismiss(SPIN_UP_TOAST_ID);
   }
-
-  return res.json();
 }
 
 export const getAllItems = () => apiFetch("/items");
