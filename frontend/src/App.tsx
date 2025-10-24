@@ -22,9 +22,11 @@ const App = () => {
   useEffect(() => {
     console.log("Warming up ShareSphere server...");
 
-    apiFetch("/", { method: "GET" }).catch(() => {
-      console.log("Server warm-up ping is done.");
-    });
+    fetch("https://sharesphere-2-0.onrender.com/", { method: "GET" }).catch(
+      () => {
+        console.log("Server warm-up ping is done.");
+      }
+    );
   }, []);
 
   return (
